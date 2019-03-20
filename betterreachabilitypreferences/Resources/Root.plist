@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Initial scale</string>
+			<key>footerText</key>
+			<string>Set the initial scale when invoking Reachability. The default option scales the interface down to 75 %.</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>ScaleCell</string>
+			<key>label</key>
+			<string>Default</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>ScaleCell</string>
+			<key>label</key>
+			<string>Remember Last Scale</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Initial position</string>
+			<key>footerText</key>
+			<string>Set the initial position of the interface when invoking Reachability.</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>PositionCell</string>
+			<key>label</key>
+			<string>Left</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>PositionCell</string>
+			<key>label</key>
+			<string>Right</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>PositionCell</string>
+			<key>label</key>
+			<string>Remember Last Position</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>BetterReachability</string>
+</dict>
+</plist>

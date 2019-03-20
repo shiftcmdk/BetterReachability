@@ -119,6 +119,12 @@ BOOL isInsideSystemGestureView = NO;
         bounds.size.width * (1.0 - newScaleClamped),
         scaledHeight
     );
+
+    if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
+        NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+        [defaults setObject:[NSNumber numberWithFloat:newScaleClamped] forKey:@"lastscale"];
+    }
 }
 
 %new
@@ -152,12 +158,20 @@ BOOL isInsideSystemGestureView = NO;
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender {
     isLeft = YES;
 
+    NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+    [defaults setObject:@0 forKey:@"lastposition"];
+
     [self swipe];
 }
 
 %new
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender {
     isLeft = NO;
+
+    NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+    [defaults setObject:@1 forKey:@"lastposition"];
 
     [self swipe];
 }
@@ -203,11 +217,45 @@ BOOL isInsideSystemGestureView = NO;
             [rootWindow addSubview:panningView];
         }
 
+        NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+        id initialPosition = [defaults objectForKey:@"initialposition"];
+
+        id lastPosition = [defaults objectForKey:@"lastposition"];
+
+        BOOL isLastPositionLeft = lastPosition == nil || [lastPosition intValue] == 0;
+
+        if (initialPosition != nil) {
+            if ([initialPosition intValue] == 0) {
+                isLeft = YES;
+            } else if ([initialPosition intValue] == 1) {
+                isLeft = NO;
+            } else {
+                isLeft = isLastPositionLeft;
+            }
+        } else {
+            isLeft = isLastPositionLeft;
+        }
+
+        CGFloat initialScale;
+
+        if ([defaults objectForKey:@"initialscale"] == nil || [[defaults objectForKey:@"initialscale"] intValue] == 0) {
+            initialScale = 0.75;
+
+            [defaults setObject:[NSNumber numberWithFloat:0.75] forKey:@"lastscale"];
+        } else {
+            if ([defaults objectForKey:@"lastscale"] == nil) {
+                initialScale = 0.75;
+            } else {
+                initialScale = fmin(0.75, fmax(0.5, [[defaults objectForKey:@"lastscale"] floatValue]));
+            }
+        }
+
         if (!slidingView) {
             slidingView = [[OverlayView alloc] initWithFrame:CGRectMake(
-                bounds.size.width - bounds.size.width * 0.25,
+                isLeft ? bounds.size.width - bounds.size.width * (1.0 - initialScale) : 0.0,
                 bounds.size.height,
-                bounds.size.width * 0.25,
+                bounds.size.width * (1.0 - initialScale),
                 0.0
             )];
             slidingView.alpha = 0.5;
@@ -229,16 +277,19 @@ BOOL isInsideSystemGestureView = NO;
             [rootWindow insertSubview:wallpaperImageView atIndex:0];
         }
 
-        isLeft = YES;
-
         if (isReachabilityEnabled) {
             [UIView animateWithDuration:0.3 animations:^{
-                CGAffineTransform scale = CGAffineTransformMakeScale(0.75, 0.75);
-                CGFloat scaledHeight = bounds.size.height * 0.75;
-                CGFloat scaledWidth = bounds.size.width * 0.75;
+                CGAffineTransform scale = CGAffineTransformMakeScale(initialScale, initialScale);
+                CGFloat scaledHeight = bounds.size.height * initialScale;
+                CGFloat scaledWidth = bounds.size.width * initialScale;
 
-                [rootWindow sceneContainerView].center = CGPointMake(scaledWidth / 2.0, bounds.size.height - scaledHeight + scaledHeight / 2.0);
-                [rootWindow _systemGestureView].center = CGPointMake(scaledWidth / 2.0, bounds.size.height - scaledHeight + scaledHeight / 2.0);
+                CGPoint center = CGPointMake(
+                    isLeft ? scaledWidth / 2.0 : bounds.size.width - scaledWidth / 2.0, 
+                    bounds.size.height - scaledHeight + scaledHeight / 2.0
+                );
+
+                [rootWindow sceneContainerView].center = center;
+                [rootWindow _systemGestureView].center = center;
 
                 [rootWindow sceneContainerView].transform = scale;
                 [rootWindow _systemGestureView].transform = scale;
@@ -247,14 +298,14 @@ BOOL isInsideSystemGestureView = NO;
                     0.0,
                     0.0,
                     bounds.size.width,
-                    bounds.size.height * 0.25
+                    bounds.size.height * (1.0 - initialScale)
                 );
 
                 slidingView.frame = CGRectMake(
-                    bounds.size.width - bounds.size.width * 0.25,
-                    bounds.size.height * 0.25,
-                    bounds.size.width * 0.25,
-                    bounds.size.height - bounds.size.height * 0.25
+                    isLeft ? bounds.size.width - bounds.size.width * (1.0 - initialScale) : 0.0,
+                    bounds.size.height * (1.0 - initialScale),
+                    bounds.size.width * (1.0 - initialScale),
+                    bounds.size.height - bounds.size.height * (1.0 - initialScale)
                 );
             } completion: ^(BOOL finished) {
                 
