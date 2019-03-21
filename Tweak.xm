@@ -8,6 +8,10 @@ BOOL isLeft = YES;
 OverlayView *slidingView;
 UIImageView *wallpaperImageView;
 BOOL isInsideSystemGestureView = NO;
+UIVisualEffectView *scaleIndicator;
+UILabel *indicatorLabel;
+CGSize scaleIndicatorSize = CGSizeMake(50.0, 26.0);
+CGFloat scaleIndicatorPadding = 4.0;
 
 @implementation OverlayView
 
@@ -72,6 +76,8 @@ BOOL isInsideSystemGestureView = NO;
         lastTranslation = CGPointZero;
     }
 
+    scaleIndicator.alpha = 1.0;
+
     CGFloat currentFactor = [rootWindow sceneContainerView].transform.a;
 
     CGPoint currentTranslation = [sender translationInView:panningView];
@@ -120,10 +126,32 @@ BOOL isInsideSystemGestureView = NO;
         scaledHeight
     );
 
+    scaleIndicator.frame = CGRectMake(
+        isLeft ? bounds.size.width * newScaleClamped + scaleIndicatorPadding : bounds.size.width * (1.0 - newScaleClamped) - scaleIndicatorSize.width - scaleIndicatorPadding,
+        bounds.size.height * (1.0 - newScaleClamped) - scaleIndicatorSize.height - scaleIndicatorPadding,
+        scaleIndicatorSize.width,
+        scaleIndicatorSize.height
+    );
+
+    indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", newScaleClamped * 100.0];
+
     if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
         [defaults setObject:[NSNumber numberWithFloat:newScaleClamped] forKey:@"lastscale"];
+
+        [self fadeScaleIndicatorDelayed];
+    }
+}
+
+%new
+-(void)fadeScaleIndicatorDelayed {
+    if (scaleIndicator) {
+        [UIView animateWithDuration:0.5 delay:1.5 options:UIViewAnimationCurveLinear animations:^{
+            scaleIndicator.alpha = 0.0;
+        } completion:^(BOOL finished) {
+
+        }];
     }
 }
 
@@ -144,6 +172,13 @@ BOOL isInsideSystemGestureView = NO;
     [UIView animateWithDuration:0.3 animations:^{
         [rootWindow sceneContainerView].center = center;
         [rootWindow _systemGestureView].center = center;
+
+        scaleIndicator.frame = CGRectMake(
+            isLeft ? bounds.size.width * currentScale + scaleIndicatorPadding : bounds.size.width * (1.0 - currentScale) - scaleIndicatorSize.width - scaleIndicatorPadding,
+            bounds.size.height * (1.0 - currentScale) - scaleIndicatorSize.height - scaleIndicatorPadding,
+            scaleIndicatorSize.width,
+            scaleIndicatorSize.height
+        );
     } completion: ^(BOOL finished) {
         slidingView.frame = CGRectMake(
             isLeft ? bounds.size.width - slidingView.frame.size.width : 0.0,
@@ -151,12 +186,16 @@ BOOL isInsideSystemGestureView = NO;
             slidingView.frame.size.width,
             slidingView.frame.size.height
         );
+
+        [self fadeScaleIndicatorDelayed];
     }];
 }
 
 %new
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender {
     isLeft = YES;
+
+    scaleIndicator.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -168,6 +207,8 @@ BOOL isInsideSystemGestureView = NO;
 %new
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender {
     isLeft = NO;
+
+    scaleIndicator.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -217,6 +258,24 @@ BOOL isInsideSystemGestureView = NO;
             [rootWindow addSubview:panningView];
         }
 
+        if (!scaleIndicator) {
+            UIVisualEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+
+            scaleIndicator = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
+            scaleIndicator.clipsToBounds = YES;
+            scaleIndicator.layer.cornerRadius = 8.0;
+
+            [rootWindow insertSubview:scaleIndicator aboveSubview:panningView];
+
+            indicatorLabel = [[[UILabel alloc] init] autorelease];
+            indicatorLabel.textAlignment = NSTextAlignmentCenter;
+            indicatorLabel.font = [UIFont systemFontOfSize:14.0];
+
+            [scaleIndicator.contentView addSubview:indicatorLabel];
+
+            scaleIndicator.userInteractionEnabled = NO;
+        }
+
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
         id initialPosition = [defaults objectForKey:@"initialposition"];
@@ -251,6 +310,10 @@ BOOL isInsideSystemGestureView = NO;
             }
         }
 
+        BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
+
+        scaleIndicator.hidden = !showScaleIndicator;
+
         if (!slidingView) {
             slidingView = [[OverlayView alloc] initWithFrame:CGRectMake(
                 isLeft ? bounds.size.width - bounds.size.width * (1.0 - initialScale) : 0.0,
@@ -278,6 +341,18 @@ BOOL isInsideSystemGestureView = NO;
         }
 
         if (isReachabilityEnabled) {
+            scaleIndicator.frame = CGRectMake(
+                isLeft ? bounds.size.width + scaleIndicatorPadding : -scaleIndicatorSize.width - scaleIndicatorPadding,
+                -scaleIndicatorSize.height - scaleIndicatorPadding,
+                scaleIndicatorSize.width,
+                scaleIndicatorSize.height
+            );
+            scaleIndicator.alpha = 1.0;
+
+            indicatorLabel.frame = scaleIndicator.bounds;
+
+            indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", initialScale * 100.0];
+
             [UIView animateWithDuration:0.3 animations:^{
                 CGAffineTransform scale = CGAffineTransformMakeScale(initialScale, initialScale);
                 CGFloat scaledHeight = bounds.size.height * initialScale;
@@ -307,8 +382,15 @@ BOOL isInsideSystemGestureView = NO;
                     bounds.size.width * (1.0 - initialScale),
                     bounds.size.height - bounds.size.height * (1.0 - initialScale)
                 );
+
+                scaleIndicator.frame = CGRectMake(
+                    isLeft ? bounds.size.width * initialScale + scaleIndicatorPadding : bounds.size.width * (1.0 - initialScale) - scaleIndicatorSize.width - scaleIndicatorPadding,
+                    bounds.size.height * (1.0 - initialScale) - scaleIndicatorSize.height - scaleIndicatorPadding,
+                    scaleIndicatorSize.width,
+                    scaleIndicatorSize.height
+                );
             } completion: ^(BOOL finished) {
-                
+                [self fadeScaleIndicatorDelayed];
             }];
         } else {
             [UIView animateWithDuration:0.3 animations:^{
@@ -331,6 +413,14 @@ BOOL isInsideSystemGestureView = NO;
                     bounds.size.width * 0.25,
                     0.0
                 );
+
+                scaleIndicator.frame = CGRectMake(
+                    isLeft ? bounds.size.width + scaleIndicatorPadding : -scaleIndicatorSize.width - scaleIndicatorPadding,
+                    -scaleIndicatorSize.height - scaleIndicatorPadding,
+                    scaleIndicatorSize.width,
+                    scaleIndicatorSize.height
+                );
+                scaleIndicator.alpha = 0.0;
             } completion: ^(BOOL finished) {
 
             }];
@@ -377,3 +467,35 @@ BOOL isInsideSystemGestureView = NO;
 }
 
 %end
+
+static void notificationCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+    if (scaleIndicator) {
+        NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+        BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
+
+        scaleIndicator.hidden = !showScaleIndicator;
+    }
+}
+
+static void *observer = NULL;
+
+%ctor {
+    CFNotificationCenterAddObserver(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        &observer,
+        notificationCallback,
+        (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.scaleindicator",
+        NULL,
+        CFNotificationSuspensionBehaviorDeliverImmediately
+    );
+}
+
+%dtor {
+    CFNotificationCenterRemoveObserver(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        &observer,
+        (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.scaleindicator",
+        NULL
+    );
+}

@@ -46,6 +46,7 @@
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender;
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender;
 -(void)swipe;
+-(void)fadeScaleIndicatorDelayed;
 
 @end
 
