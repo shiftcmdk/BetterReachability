@@ -2,14 +2,9 @@
 
 BOOL isReachabilityEnabled = NO;
 FBRootWindow *rootWindow;
-OverlayView *panningView;
 CGPoint lastTranslation = CGPointZero;
 BOOL isLeft = YES;
-OverlayView *slidingView;
-UIImageView *wallpaperImageView;
 BOOL isInsideSystemGestureView = NO;
-UIVisualEffectView *scaleIndicator;
-UILabel *indicatorLabel;
 CGSize scaleIndicatorSize = CGSizeMake(50.0, 26.0);
 CGFloat scaleIndicatorPadding = 4.0;
 
@@ -27,6 +22,12 @@ CGFloat scaleIndicatorPadding = 4.0;
 
 %hook SBReachabilityManager
 
+%property (nonatomic, retain) OverlayView *panningView;
+%property (nonatomic, retain) OverlayView *slidingView;
+%property (nonatomic, retain) UIImageView *wallpaperImageView;
+%property (nonatomic, retain) UIVisualEffectView *scaleIndicator;
+%property (nonatomic, retain) UILabel *indicatorLabel;
+
 -(void)addObserver:(id)arg1 {
     NSString *className = NSStringFromClass([arg1 class]);
 
@@ -37,15 +38,15 @@ CGFloat scaleIndicatorPadding = 4.0;
 
 %new
 -(void)setWallpaper:(id)controller {
-    if (!wallpaperImageView) {
+    if (!self.wallpaperImageView) {
         CGRect bounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
 
-        wallpaperImageView = [[UIImageView alloc] initWithFrame:bounds];
-        wallpaperImageView.contentMode = UIViewContentModeScaleAspectFill;
+        self.wallpaperImageView = [[[UIImageView alloc] initWithFrame:bounds] autorelease];
+        self.wallpaperImageView.contentMode = UIViewContentModeScaleAspectFill;
     }
 
-    if (rootWindow && !wallpaperImageView.superview) {
-        [rootWindow insertSubview:wallpaperImageView atIndex:1];
+    if (rootWindow && !self.wallpaperImageView.superview) {
+        [rootWindow insertSubview:self.wallpaperImageView atIndex:1];
     }
 
     SBWallpaperController *ctrl = controller;
@@ -61,12 +62,12 @@ CGFloat scaleIndicatorPadding = 4.0;
         image = [ctrl homescreenLightForegroundBlurImage];
     }
 
-    if (wallpaperImageView.superview) {
-        [UIView transitionWithView:wallpaperImageView duration:1.0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
-            wallpaperImageView.image = image;
+    if (self.wallpaperImageView.superview) {
+        [UIView transitionWithView:self.wallpaperImageView duration:1.0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+            self.wallpaperImageView.image = image;
         } completion:nil];
     } else {
-        wallpaperImageView.image = image;
+        self.wallpaperImageView.image = image;
     }
 }
 
@@ -76,14 +77,14 @@ CGFloat scaleIndicatorPadding = 4.0;
         lastTranslation = CGPointZero;
     }
 
-    if (!scaleIndicator.effect) {
-        scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
-        indicatorLabel.alpha = 1.0;
+    if (!self.scaleIndicator.effect) {
+        self.scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        self.indicatorLabel.alpha = 1.0;
     }
 
     CGFloat currentFactor = [rootWindow sceneContainerView].transform.a;
 
-    CGPoint currentTranslation = [sender translationInView:panningView];
+    CGPoint currentTranslation = [sender translationInView:self.panningView];
 
     CGFloat distance = hypotf(lastTranslation.x - currentTranslation.x, lastTranslation.y - currentTranslation.y);
 
@@ -115,28 +116,28 @@ CGFloat scaleIndicatorPadding = 4.0;
     [rootWindow sceneContainerView].transform = newTransform;
     [rootWindow _systemGestureView].transform = newTransform;
 
-    panningView.frame = CGRectMake(
-        panningView.frame.origin.x, 
-        panningView.frame.origin.y,
-        panningView.frame.size.width,
+    self.panningView.frame = CGRectMake(
+        self.panningView.frame.origin.x, 
+        self.panningView.frame.origin.y,
+        self.panningView.frame.size.width,
         bounds.size.height * (1.0 - newScaleClamped)
     );
 
-    slidingView.frame = CGRectMake(
+    self.slidingView.frame = CGRectMake(
         isLeft ? bounds.size.width - bounds.size.width * (1.0 - newScaleClamped) : 0.0,
         bounds.size.height * (1.0 - newScaleClamped),
         bounds.size.width * (1.0 - newScaleClamped),
         scaledHeight
     );
 
-    scaleIndicator.frame = CGRectMake(
+    self.scaleIndicator.frame = CGRectMake(
         isLeft ? bounds.size.width * newScaleClamped + scaleIndicatorPadding : bounds.size.width * (1.0 - newScaleClamped) - scaleIndicatorSize.width - scaleIndicatorPadding,
         bounds.size.height * (1.0 - newScaleClamped) - scaleIndicatorSize.height - scaleIndicatorPadding,
         scaleIndicatorSize.width,
         scaleIndicatorSize.height
     );
 
-    indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", newScaleClamped * 100.0];
+    self.indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", newScaleClamped * 100.0];
 
     if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
@@ -149,10 +150,10 @@ CGFloat scaleIndicatorPadding = 4.0;
 
 %new
 -(void)fadeScaleIndicatorDelayed {
-    if (scaleIndicator) {
+    if (self.scaleIndicator) {
         [UIView animateWithDuration:0.5 delay:1.5 options:UIViewAnimationCurveLinear animations:^{
-            scaleIndicator.effect = nil;
-            indicatorLabel.alpha = 0.0;
+            self.scaleIndicator.effect = nil;
+            self.indicatorLabel.alpha = 0.0;
         } completion:^(BOOL finished) {
 
         }];
@@ -177,18 +178,18 @@ CGFloat scaleIndicatorPadding = 4.0;
         [rootWindow sceneContainerView].center = center;
         [rootWindow _systemGestureView].center = center;
 
-        scaleIndicator.frame = CGRectMake(
+        self.scaleIndicator.frame = CGRectMake(
             isLeft ? bounds.size.width * currentScale + scaleIndicatorPadding : bounds.size.width * (1.0 - currentScale) - scaleIndicatorSize.width - scaleIndicatorPadding,
             bounds.size.height * (1.0 - currentScale) - scaleIndicatorSize.height - scaleIndicatorPadding,
             scaleIndicatorSize.width,
             scaleIndicatorSize.height
         );
     } completion: ^(BOOL finished) {
-        slidingView.frame = CGRectMake(
-            isLeft ? bounds.size.width - slidingView.frame.size.width : 0.0,
-            slidingView.frame.origin.y,
-            slidingView.frame.size.width,
-            slidingView.frame.size.height
+        self.slidingView.frame = CGRectMake(
+            isLeft ? bounds.size.width - self.slidingView.frame.size.width : 0.0,
+            self.slidingView.frame.origin.y,
+            self.slidingView.frame.size.width,
+            self.slidingView.frame.size.height
         );
 
         [self fadeScaleIndicatorDelayed];
@@ -199,8 +200,8 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender {
     isLeft = YES;
 
-    scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
-    indicatorLabel.alpha = 1.0;
+    self.scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+    self.indicatorLabel.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -213,8 +214,8 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender {
     isLeft = NO;
 
-    scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
-    indicatorLabel.alpha = 1.0;
+    self.scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+    self.indicatorLabel.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -243,43 +244,43 @@ CGFloat scaleIndicatorPadding = 4.0;
     if (rootWindow) {
         CGRect bounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
 
-        if (!panningView) {
-            panningView = [[OverlayView alloc] initWithFrame:CGRectMake(
+        if (!self.panningView) {
+            self.panningView = [[[OverlayView alloc] initWithFrame:CGRectMake(
                 0.0,
                 0.0,
                 bounds.size.width,
                 0.0
-            )];
-            panningView.alpha = 0.5;
+            )] autorelease];
+            self.panningView.alpha = 0.5;
 
             UIPanGestureRecognizer *pan = [[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(pan:)] autorelease];
 
-            [panningView addGestureRecognizer:pan];
+            [self.panningView addGestureRecognizer:pan];
 
             UITapGestureRecognizer *doubleTap = [[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTap:)] autorelease];
             doubleTap.numberOfTapsRequired = 2; 
 
-            [panningView addGestureRecognizer:doubleTap];
+            [self.panningView addGestureRecognizer:doubleTap];
 
-            [rootWindow addSubview:panningView];
+            [rootWindow addSubview:self.panningView];
         }
 
-        if (!scaleIndicator) {
+        if (!self.scaleIndicator) {
             UIVisualEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
 
-            scaleIndicator = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
-            scaleIndicator.clipsToBounds = YES;
-            scaleIndicator.layer.cornerRadius = 8.0;
+            self.scaleIndicator = [[[UIVisualEffectView alloc] initWithEffect:blurEffect] autorelease];
+            self.scaleIndicator.clipsToBounds = YES;
+            self.scaleIndicator.layer.cornerRadius = 8.0;
 
-            [rootWindow insertSubview:scaleIndicator aboveSubview:panningView];
+            [rootWindow insertSubview:self.scaleIndicator aboveSubview:self.panningView];
 
-            indicatorLabel = [[[UILabel alloc] init] autorelease];
-            indicatorLabel.textAlignment = NSTextAlignmentCenter;
-            indicatorLabel.font = [UIFont systemFontOfSize:14.0];
+            self.indicatorLabel = [[[UILabel alloc] init] autorelease];
+            self.indicatorLabel.textAlignment = NSTextAlignmentCenter;
+            self.indicatorLabel.font = [UIFont systemFontOfSize:14.0];
 
-            [scaleIndicator.contentView addSubview:indicatorLabel];
+            [self.scaleIndicator.contentView addSubview:self.indicatorLabel];
 
-            scaleIndicator.userInteractionEnabled = NO;
+            self.scaleIndicator.userInteractionEnabled = NO;
         }
 
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
@@ -318,52 +319,54 @@ CGFloat scaleIndicatorPadding = 4.0;
 
         BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
 
-        scaleIndicator.hidden = !showScaleIndicator;
+        self.scaleIndicator.hidden = !showScaleIndicator;
 
-        if (!slidingView) {
-            slidingView = [[OverlayView alloc] initWithFrame:CGRectMake(
+        if (!self.slidingView) {
+            self.slidingView = [[[OverlayView alloc] initWithFrame:CGRectMake(
                 isLeft ? bounds.size.width - bounds.size.width * (1.0 - initialScale) : 0.0,
                 bounds.size.height,
                 bounds.size.width * (1.0 - initialScale),
                 0.0
-            )];
-            slidingView.alpha = 0.5;
+            )] autorelease];
+            self.slidingView.alpha = 0.5;
 
-            [rootWindow insertSubview:slidingView atIndex:0];
+            [rootWindow insertSubview:self.slidingView atIndex:0];
 
             UISwipeGestureRecognizer *leftSwipe = [[[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeLeft:)] autorelease];
             leftSwipe.direction = UISwipeGestureRecognizerDirectionLeft;
             
-            [slidingView addGestureRecognizer:leftSwipe];
+            [self.slidingView addGestureRecognizer:leftSwipe];
 
             UISwipeGestureRecognizer *rightSwipe = [[[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeRight:)] autorelease];
             rightSwipe.direction = UISwipeGestureRecognizerDirectionRight;
             
-            [slidingView addGestureRecognizer:rightSwipe];
+            [self.slidingView addGestureRecognizer:rightSwipe];
         }
 
-        if (!wallpaperImageView.superview) {
-            [rootWindow insertSubview:wallpaperImageView atIndex:0];
-        }
+        SBWallpaperController *wallpaperController = [%c(SBWallpaperController) sharedInstance];
+
+        [self setWallpaper:wallpaperController];
+
+        NSTimeInterval reachabilityAnimationDuration = 0.3;
 
         if (isReachabilityEnabled) {
-            scaleIndicator.frame = CGRectMake(
+            self.scaleIndicator.frame = CGRectMake(
                 isLeft ? bounds.size.width + scaleIndicatorPadding : -scaleIndicatorSize.width - scaleIndicatorPadding,
                 -scaleIndicatorSize.height - scaleIndicatorPadding,
                 scaleIndicatorSize.width,
                 scaleIndicatorSize.height
             );
 
-            if (!scaleIndicator.effect) {
-                scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
-                indicatorLabel.alpha = 1.0;
+            if (!self.scaleIndicator.effect) {
+                self.scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+                self.indicatorLabel.alpha = 1.0;
             }
 
-            indicatorLabel.frame = scaleIndicator.bounds;
+            self.indicatorLabel.frame = self.scaleIndicator.bounds;
 
-            indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", initialScale * 100.0];
+            self.indicatorLabel.text = [NSString stringWithFormat:@"%.f %%", initialScale * 100.0];
 
-            [UIView animateWithDuration:0.3 animations:^{
+            [UIView animateWithDuration:reachabilityAnimationDuration animations:^{
                 CGAffineTransform scale = CGAffineTransformMakeScale(initialScale, initialScale);
                 CGFloat scaledHeight = bounds.size.height * initialScale;
                 CGFloat scaledWidth = bounds.size.width * initialScale;
@@ -379,21 +382,21 @@ CGFloat scaleIndicatorPadding = 4.0;
                 [rootWindow sceneContainerView].transform = scale;
                 [rootWindow _systemGestureView].transform = scale;
 
-                panningView.frame = CGRectMake(
+                self.panningView.frame = CGRectMake(
                     0.0,
                     0.0,
                     bounds.size.width,
                     bounds.size.height * (1.0 - initialScale)
                 );
 
-                slidingView.frame = CGRectMake(
+                self.slidingView.frame = CGRectMake(
                     isLeft ? bounds.size.width - bounds.size.width * (1.0 - initialScale) : 0.0,
                     bounds.size.height * (1.0 - initialScale),
                     bounds.size.width * (1.0 - initialScale),
                     bounds.size.height - bounds.size.height * (1.0 - initialScale)
                 );
 
-                scaleIndicator.frame = CGRectMake(
+                self.scaleIndicator.frame = CGRectMake(
                     isLeft ? bounds.size.width * initialScale + scaleIndicatorPadding : bounds.size.width * (1.0 - initialScale) - scaleIndicatorSize.width - scaleIndicatorPadding,
                     bounds.size.height * (1.0 - initialScale) - scaleIndicatorSize.height - scaleIndicatorPadding,
                     scaleIndicatorSize.width,
@@ -403,37 +406,52 @@ CGFloat scaleIndicatorPadding = 4.0;
                 [self fadeScaleIndicatorDelayed];
             }];
         } else {
-            [UIView animateWithDuration:0.3 animations:^{
+            [UIView animateWithDuration:reachabilityAnimationDuration animations:^{
                 [rootWindow sceneContainerView].center = CGPointMake(bounds.size.width / 2.0, bounds.size.height / 2.0);
                 [rootWindow _systemGestureView].center = CGPointMake(bounds.size.width / 2.0, bounds.size.height / 2.0);
 
                 [rootWindow sceneContainerView].transform = CGAffineTransformIdentity;
                 [rootWindow _systemGestureView].transform = CGAffineTransformIdentity;
 
-                panningView.frame = CGRectMake(
+                self.panningView.frame = CGRectMake(
                     0.0,
                     0.0,
                     bounds.size.width,
                     0.0
                 );
 
-                slidingView.frame = CGRectMake(
+                self.slidingView.frame = CGRectMake(
                     bounds.size.width - bounds.size.width * 0.25,
                     bounds.size.height,
                     bounds.size.width * 0.25,
                     0.0
                 );
 
-                scaleIndicator.frame = CGRectMake(
+                self.scaleIndicator.frame = CGRectMake(
                     isLeft ? bounds.size.width + scaleIndicatorPadding : -scaleIndicatorSize.width - scaleIndicatorPadding,
                     -scaleIndicatorSize.height - scaleIndicatorPadding,
                     scaleIndicatorSize.width,
                     scaleIndicatorSize.height
                 );
-                scaleIndicator.effect = nil;
-                indicatorLabel.alpha = 0.0;
+                self.scaleIndicator.effect = nil;
+                self.indicatorLabel.alpha = 0.0;
             } completion: ^(BOOL finished) {
+                if (!isReachabilityEnabled) {
+                    [self.panningView removeFromSuperview];
+                    self.panningView = nil;
 
+                    [self.slidingView removeFromSuperview];
+                    self.slidingView = nil;
+
+                    [self.wallpaperImageView removeFromSuperview];
+                    self.wallpaperImageView = nil;
+
+                    [self.indicatorLabel removeFromSuperview];
+                    self.indicatorLabel = nil;
+
+                    [self.scaleIndicator removeFromSuperview];
+                    self.scaleIndicator = nil;
+                }
             }];
         }
     }
@@ -480,12 +498,12 @@ CGFloat scaleIndicatorPadding = 4.0;
 %end
 
 static void notificationCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-    if (scaleIndicator) {
+    if ([[%c(SBReachabilityManager) sharedInstance] scaleIndicator]) {
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
         BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
 
-        scaleIndicator.hidden = !showScaleIndicator;
+        [[%c(SBReachabilityManager) sharedInstance] scaleIndicator].hidden = !showScaleIndicator;
     }
 }
 

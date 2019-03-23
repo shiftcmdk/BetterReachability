@@ -1,3 +1,6 @@
+@interface OverlayView: UIView
+@end
+
 @interface SBCoverSheetSlidingViewController
 -(void)_dismissCoverSheetAnimated:(BOOL)arg1 withCompletion:(id)arg2;
 -(void)_presentCoverSheetAnimated:(BOOL)arg1 withCompletion:(id)arg2;
@@ -48,6 +51,12 @@
 -(void)swipe;
 -(void)fadeScaleIndicatorDelayed;
 
+@property (nonatomic, retain) OverlayView *panningView;
+@property (nonatomic, retain) OverlayView *slidingView;
+@property (nonatomic, retain) UIImageView *wallpaperImageView;
+@property (nonatomic, retain) UIVisualEffectView *scaleIndicator;
+@property (nonatomic, retain) UILabel *indicatorLabel;
+
 @end
 
 @interface FBRootWindow: UIWindow
@@ -92,7 +101,4 @@
 - (id)initWithSettings:(id)arg1 options:(unsigned long long)arg2 initialWeighting:(double)arg3 scaleAdjustment:(id /* block */)arg4;
 - (void)_setContinuousCornerRadius:(double)arg1;
 
-@end
-
-@interface OverlayView: UIView
 @end
