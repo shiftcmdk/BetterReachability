@@ -55,6 +55,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Scale indicator</string>
+			<key>footerText</key>
+			<string>Display a percentage based indicator that shows the current scale of the interface.</string>
 		</dict>
 		<dict>
 			<key>cell</key>

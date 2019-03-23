@@ -76,7 +76,10 @@ CGFloat scaleIndicatorPadding = 4.0;
         lastTranslation = CGPointZero;
     }
 
-    scaleIndicator.alpha = 1.0;
+    if (!scaleIndicator.effect) {
+        scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        indicatorLabel.alpha = 1.0;
+    }
 
     CGFloat currentFactor = [rootWindow sceneContainerView].transform.a;
 
@@ -148,7 +151,8 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)fadeScaleIndicatorDelayed {
     if (scaleIndicator) {
         [UIView animateWithDuration:0.5 delay:1.5 options:UIViewAnimationCurveLinear animations:^{
-            scaleIndicator.alpha = 0.0;
+            scaleIndicator.effect = nil;
+            indicatorLabel.alpha = 0.0;
         } completion:^(BOOL finished) {
 
         }];
@@ -195,7 +199,8 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender {
     isLeft = YES;
 
-    scaleIndicator.alpha = 1.0;
+    scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+    indicatorLabel.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -208,7 +213,8 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender {
     isLeft = NO;
 
-    scaleIndicator.alpha = 1.0;
+    scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+    indicatorLabel.alpha = 1.0;
 
     NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
@@ -347,7 +353,11 @@ CGFloat scaleIndicatorPadding = 4.0;
                 scaleIndicatorSize.width,
                 scaleIndicatorSize.height
             );
-            scaleIndicator.alpha = 1.0;
+
+            if (!scaleIndicator.effect) {
+                scaleIndicator.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+                indicatorLabel.alpha = 1.0;
+            }
 
             indicatorLabel.frame = scaleIndicator.bounds;
 
@@ -420,7 +430,8 @@ CGFloat scaleIndicatorPadding = 4.0;
                     scaleIndicatorSize.width,
                     scaleIndicatorSize.height
                 );
-                scaleIndicator.alpha = 0.0;
+                scaleIndicator.effect = nil;
+                indicatorLabel.alpha = 0.0;
             } completion: ^(BOOL finished) {
 
             }];
