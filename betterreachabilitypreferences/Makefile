@@ -1,5 +1,7 @@
 include $(THEOS)/makefiles/common.mk
 
+ARCHS = arm64 arm64e
+
 BUNDLE_NAME = BetterReachabilityPreferences
 BetterReachabilityPreferences_FILES = BRRootListController.m
 BetterReachabilityPreferences_INSTALL_PATH = /Library/PreferenceBundles
