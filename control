@@ -1,7 +1,7 @@
 Package: com.shiftcmdk.betterreachability
 Name: BetterReachability
 Depends: mobilesubstrate
-Version: 0.2.1
+Version: 0.3
 Architecture: iphoneos-arm
 Description: Make Reachability more useful by scaling down the interface.
 Maintainer: shiftcmdk
