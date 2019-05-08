@@ -27,6 +27,26 @@ CGFloat scaleIndicatorPadding = 4.0;
 %property (nonatomic, retain) UIImageView *wallpaperImageView;
 %property (nonatomic, retain) UIVisualEffectView *scaleIndicator;
 %property (nonatomic, retain) UILabel *indicatorLabel;
+%property (nonatomic, assign) NSInteger backgroundMode;
+%property (nonatomic, retain) UIImage *selectedImage;
+
+-(id)init {
+    SBReachabilityManager *original = %orig;
+
+    if (original) {
+        NSDictionary *dict = [[[NSDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.shiftcmdk.betterreachabilitypreferences.image.plist"] autorelease];
+
+        NSData *imageData = [dict objectForKey:@"image"];
+
+        if (imageData) {
+            original.selectedImage = [UIImage imageWithData:imageData];
+        } else {
+            original.selectedImage = nil;
+        }
+    }
+
+    return original;
+}
 
 -(void)addObserver:(id)arg1 {
     NSString *className = NSStringFromClass([arg1 class]);
@@ -37,7 +57,7 @@ CGFloat scaleIndicatorPadding = 4.0;
 }
 
 %new
--(void)setWallpaper:(id)controller {
+-(void)setBackground:(BOOL)animated {
     if (!self.wallpaperImageView) {
         CGRect bounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
 
@@ -49,6 +69,54 @@ CGFloat scaleIndicatorPadding = 4.0;
         [rootWindow insertSubview:self.wallpaperImageView atIndex:1];
     }
 
+    NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+    switch (self.backgroundMode) {
+        case 1: {
+            id customColor = [defaults objectForKey:@"customcolor"];
+
+            UIColor *selectedColor;
+
+	        if ([customColor isKindOfClass:[NSArray class]] && [customColor count] >= 3) {
+                selectedColor = [UIColor colorWithRed:[customColor[0] floatValue] green:[customColor[1] floatValue] blue:[customColor[2] floatValue] alpha:1.0];
+            } else {
+                selectedColor = [UIColor blackColor];
+            }
+
+            if (animated) {
+                [UIView transitionWithView:self.wallpaperImageView duration:0.3 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+                    self.wallpaperImageView.image = nil;
+                    self.wallpaperImageView.backgroundColor = selectedColor;
+                } completion:nil];
+            } else {
+                self.wallpaperImageView.image = nil;
+                self.wallpaperImageView.backgroundColor = selectedColor;
+            }
+            break;
+        }
+        case 2: {
+            if (animated) {
+                [UIView transitionWithView:self.wallpaperImageView duration:0.3 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+                    self.wallpaperImageView.image = self.selectedImage;
+                    self.wallpaperImageView.backgroundColor = [UIColor clearColor];
+                } completion:nil];
+            } else {
+                self.wallpaperImageView.image = self.selectedImage;
+                self.wallpaperImageView.backgroundColor = [UIColor clearColor];
+            }
+            break;
+        }
+        default:
+            SBWallpaperController *wallpaperController = [%c(SBWallpaperController) sharedInstance];
+
+            [self setWallpaper:wallpaperController duration:0.3];
+
+            break;
+    }
+}
+
+%new
+-(void)setWallpaper:(id)controller duration:(NSTimeInterval)duration {
     SBWallpaperController *ctrl = controller;
     UIImage *image;
 
@@ -63,7 +131,7 @@ CGFloat scaleIndicatorPadding = 4.0;
     }
 
     if (self.wallpaperImageView.superview) {
-        [UIView transitionWithView:self.wallpaperImageView duration:1.0 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        [UIView transitionWithView:self.wallpaperImageView duration:duration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
             self.wallpaperImageView.image = image;
         } completion:nil];
     } else {
@@ -343,9 +411,9 @@ CGFloat scaleIndicatorPadding = 4.0;
             [self.slidingView addGestureRecognizer:rightSwipe];
         }
 
-        SBWallpaperController *wallpaperController = [%c(SBWallpaperController) sharedInstance];
+        self.backgroundMode = [[defaults objectForKey:@"background"] intValue];
 
-        [self setWallpaper:wallpaperController];
+        [self setBackground:NO];
 
         NSTimeInterval reachabilityAnimationDuration = 0.3;
 
@@ -475,8 +543,10 @@ CGFloat scaleIndicatorPadding = 4.0;
 -(void)_handleWallpaperChangedForVariant:(long long)arg1 {
     %orig;
 
-    if (arg1 == 1) {
-        [[%c(SBReachabilityManager) sharedInstance] setWallpaper:self];
+    NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+    if (arg1 == 1 && [[defaults objectForKey:@"background"] intValue] == 0) {
+        [[%c(SBReachabilityManager) sharedInstance] setWallpaper:self duration:1.0];
     }
 }
 
@@ -498,23 +568,69 @@ CGFloat scaleIndicatorPadding = 4.0;
 %end
 
 static void notificationCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-    if ([[%c(SBReachabilityManager) sharedInstance] scaleIndicator]) {
+    if ([(NSString *)name isEqual:@"com.shiftcmdk.betterreachabilitypreferences.scaleindicator"]) {
+        if ([[%c(SBReachabilityManager) sharedInstance] scaleIndicator]) {
+            NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
+
+            BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
+
+            [[%c(SBReachabilityManager) sharedInstance] scaleIndicator].hidden = !showScaleIndicator;
+        }
+    } else if ([(NSString *)name isEqual:@"com.shiftcmdk.betterreachabilitypreferences.background"]) {
+        SBReachabilityManager *manager = [%c(SBReachabilityManager) sharedInstance];
+
         NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:@"com.shiftcmdk.betterreachabilitypreferences"] autorelease];
 
-        BOOL showScaleIndicator = [defaults objectForKey:@"scaleindicator"] == nil || [[defaults objectForKey:@"scaleindicator"] boolValue];
+        int lastBackgroundMode = [manager backgroundMode];
+        int newBackgroundMode = [[defaults objectForKey:@"background"] intValue];
 
-        [[%c(SBReachabilityManager) sharedInstance] scaleIndicator].hidden = !showScaleIndicator;
+        manager.backgroundMode = newBackgroundMode;
+
+        if (newBackgroundMode == 2) {
+            NSDictionary *dict = [[[NSDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.shiftcmdk.betterreachabilitypreferences.image.plist"] autorelease];
+
+            NSData *imageData = [dict objectForKey:@"image"];
+
+            if (imageData) {
+                manager.selectedImage = [UIImage imageWithData:imageData];
+            } else {
+                manager.selectedImage = nil;
+            }
+        }
+
+        if (isReachabilityEnabled) {
+            if (newBackgroundMode == 2 && lastBackgroundMode == 2) {
+                [manager setBackground:YES];
+            } else {
+                [manager setBackground:lastBackgroundMode != newBackgroundMode];
+            }
+        }
     }
 }
 
 static void *observer = NULL;
 
 %ctor {
+    NSString *path = @"/var/mobile/Library/Preferences/com.shiftcmdk.betterreachabilitypreferences.image.plist";
+
+    if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        [[NSDictionary dictionary] writeToFile:path atomically:YES];
+    }
+
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
         notificationCallback,
         (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.scaleindicator",
+        NULL,
+        CFNotificationSuspensionBehaviorDeliverImmediately
+    );
+
+    CFNotificationCenterAddObserver(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        &observer,
+        notificationCallback,
+        (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.background",
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
@@ -525,6 +641,13 @@ static void *observer = NULL;
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
         (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.scaleindicator",
+        NULL
+    );
+
+    CFNotificationCenterRemoveObserver(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        &observer,
+        (CFStringRef)@"com.shiftcmdk.betterreachabilitypreferences.background",
         NULL
     );
 }

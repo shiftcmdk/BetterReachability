@@ -54,6 +54,44 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Background</string>
+		</dict>
+		<dict>
+            <key>cell</key>
+            <string>PSSegmentCell</string>
+			<key>cellClass</key>
+			<string>SegmentCell</string>
+			<key>identifier</key>
+			<string>backgroundSegment</string>
+            <key>validValues</key>
+            <array>
+                <string>0</string>
+                <string>1</string>
+				<string>2</string>
+            </array>
+            <key>validTitles</key>
+            <array>
+                <string>Wallpaper</string>
+                <string>Solid Color</string>
+				<string>Custom Image</string>
+            </array>
+			<key>get</key>
+			<string>selectedIndex</string>
+			<key>set</key>
+			<string>selectedIndexDidChange:</string>
+        </dict>
+		<dict>
+			<key>cellClass</key>
+			<string>ColorCell</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>ImageCell</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>Scale indicator</string>
 			<key>footerText</key>
 			<string>Display a percentage based indicator that shows the current scale of the interface.</string>

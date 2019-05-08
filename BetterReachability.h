@@ -45,7 +45,8 @@
 -(BOOL)reachabilityModeActive;
 -(void)toggleReachability;
 -(void)_notifyObserversReachabilityModeActive:(BOOL)arg1 excludingObserver:(id)arg2;
--(void)setWallpaper:(id)controller;
+-(void)setWallpaper:(id)controller duration:(NSTimeInterval)duration;
+-(void)setBackground:(BOOL)animated;
 -(void)swipeLeft:(UISwipeGestureRecognizer *)sender;
 -(void)swipeRight:(UISwipeGestureRecognizer *)sender;
 -(void)swipe;
@@ -56,6 +57,8 @@
 @property (nonatomic, retain) UIImageView *wallpaperImageView;
 @property (nonatomic, retain) UIVisualEffectView *scaleIndicator;
 @property (nonatomic, retain) UILabel *indicatorLabel;
+@property (nonatomic, assign) NSInteger backgroundMode;
+@property (nonatomic, retain) UIImage *selectedImage;
 
 @end
 
